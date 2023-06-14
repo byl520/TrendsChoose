@@ -2,7 +2,7 @@
  * @Author: Elaine
  * @Date: 2023-06-10 11:30:43
  * @LastEditors: Elaine
- * @LastEditTime: 2023-06-12 20:10:11
+ * @LastEditTime: 2023-06-13 20:41:31
  * @Description: 请填写简介
  */
 //index.js
@@ -27,5 +27,22 @@ export default new Router({
         meta:{
             title:'首页2'
         }
-    }]
+    },
+    {
+        path:'/charts',
+        name:'charts',
+        component :()=> import('@/views/charts.vue'),
+        meta:{
+            title:'charts'
+        }
+    },
+    {
+        path:'/demo',
+        name:'demo',
+        component :()=> import('@/views/demo.vue'),
+        meta:{
+            title:'demo'
+        }
+    }
+]
 })

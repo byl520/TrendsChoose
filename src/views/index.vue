@@ -2,53 +2,15 @@
  * @Author: Elaine
  * @Date: 2023-06-10 11:31:07
  * @LastEditors: Elaine
- * @LastEditTime: 2023-06-12 21:20:16
+ * @LastEditTime: 2023-06-13 16:57:25
  * @Description: 请填写简介
 -->
 <template>
   <div class="Echarts">
-    <ul class="tab-tilte">
-      <li :class="{ active: activenav == 0 }" @click="activenav = 0">W</li>
-      <li :class="{ active: activenav == 1 }" @click="activenav = 1">M</li>
-      <li :class="{ active: activenav == 2 }" @click="activenav = 2">3M</li>
-      <li :class="{ active: activenav == 3 }" @click="activenav = 3">Y</li>
-      <li :class="{ active: activenav == 4 }" @click="activenav = 4">ALL</li>
-    </ul>
-    <div class="box">
-        <div class="boxpanel"> <span @click="prev">{{'<'}}</span><p class="currentDateStr" @click="showPicker">{{ currentDateStr }}</p><span @click="next">{{'>'}}</span></div>
-      
-      <van-popup v-model="showMonth" position="bottom">
-        <!-- <van-datetime-picker
-          type="date"
-          v-model="currentDate"
-          :columns-order="pikckerType"
-          :title="pickerTitle"
-          :formatter="formatter"
-        /> -->
-        <van-picker
-          :title="pickerTitle"
-          show-toolbar
-          :columns="columns"
-          @confirm="onConfirm"
-          @cancel="onCancel"
-          @change="onChange"
-        />
-      </van-popup>
-
-      <van-calendar
-        v-model="showWeek"
-        type="range"
-        @close="onConfirm"
-        @confirm="onConfirm"
-        color="#D1E1FB"
-        :max-range="7"
-        :show-confirm="false"
-        :formatter="formatter"
-        :min-date="minDate" :max-date="maxDate"
-      />
-      <div id="myChart" ref="myChart"></div>
-      {{ diff }}
-    </div>
+    <button @click="pushDate" id="myChart">{{ '向ios发送数据'+activenav+'，客户端返回：'+pullDateStr }}</button>
+    <span>{{ pullDateStr }}</span>
+    <div>{{ '安卓:'+isAndroid }}</div>
+    <div>{{ 'Ios:'+isIos }}</div>
   </div>
 </template>
 
@@ -58,30 +20,30 @@ require("echarts/lib/component/grid");
 require("echarts/lib/component/visualMap");
 require("echarts/lib/chart/line");
 require("echarts/lib/component/markLine");
-import {getWeek,getTimeEn} from './util'
-import { mockData, monthEn, QuarterEn, WeekEn,monthDay } from "./mock";
+import { getWeek, getTimeEn } from "./util";
+import { mockData, monthEn, QuarterEn, WeekEn, monthDay } from "./mock";
 export default {
   name: "treand",
   data() {
     return {
       activebar: "",
       activenav: 0,
+      isChange: false,
       xList: [], //x坐标刻度
       showWeek: false,
       showMonth: false,
-      diff:0,
+      diff: 0,
       currentDate: new Date(),
       proBarOpt: {
         backgroundColor: "#fff",
         tooltip: {
-                trigger: 'axis',
-                formatter: function (params) {
-                
-                    let str = params[0].name + '</br>' + 'value:' + params[0].value;
+          trigger: "axis",
+          formatter: function (params) {
+            let str = params[0].name + "</br>" + "value:" + params[0].value;
 
-                    return str
-                },
-            },
+            return str;
+          },
+        },
         color: ["#0A79C3", "#EBF6FE"],
         grid: {
           //网格
@@ -97,8 +59,8 @@ export default {
             show: false,
             alignWithLabel: true,
             length: 0,
-            min:0,
-            max:100
+            min: 0,
+            max: 100,
           },
           axisLabel: {
             //x坐标轴刻度标签
@@ -124,8 +86,8 @@ export default {
         },
         yAxis: [
           {
-            min:0,
-            max:100,
+            min: 0,
+            max: 100,
             type: "value",
             name: "kg",
             nameLocation: "middle",
@@ -139,7 +101,7 @@ export default {
             nameGap: 93,
             scale: false, //显示零刻度
             axisLabel: {
-              formatter: "{value} ", 
+              formatter: "{value} ",
               color: "#858585 ",
             },
             axisTick: {
@@ -224,260 +186,57 @@ export default {
       pickerTitle: "Month",
       currentDateStr: "May 14-20,2023",
       columns: [],
-      currenDateList:[],//当前日期筛选
-      myChart:'',
+      currenDateList: [], //当前日期筛选
+      myChart: "",
       monthDay,
-      currentMonthDays:0
+      currentMonthDays: 0,
+      response:'',
+      pullDateStr:''
     };
   },
-  computed: {
-    xCol() {
-      //x坐标刻度
-    },
-    minDate(){
-        return new Date(mockData[0].date)
-    },
-    maxDate(){
-        return new Date(mockData[mockData.length-1].date)
-    }, 
-  },
-  watch: {
-    activenav: {
-      handler(val) {
-        this.fixDate(val);
-        this.filterTime(val)
-        switch (val) {
-          case 2: //季
-            this.pikckerSort = ["month", "year"];
-            this.pikckerType = "month-year";
-            this.pickerTitle = "Quarter";
-            break;
-          case 3: //年
-            this.pikckerSort = ["year"];
-            this.pikckerType = "month-year";
-            this.pickerTitle = "Year";
-            break;
-          case 4: //所有
-            this.pikckerSort = ["year"];
-            this.pickerTitle = "All";
-            break;
-        }
-      },
-      immediate: true,
-      deep: true,
-    },
-  },
   mounted() {
-    // this.drawLine();
-    this.getMonth()
+    window.pullDate=this.pullDate
   },
-  created(){
-  },
-  methods: {
-    getMonth(){
-    let date = new Date();
-    let month = date.getMonth()+1;   //月份从0开始获取，所以需要加1
-    let year = date.getYear();
-    
-    let d = new Date(year,month,0);    
-    let day = d.getDate();
-    let tempArr=[]
-    for(let i=0;i<day;i++){
-        if(i<10){
-            tempArr.push(Number(0+i))
-        }else{
-            tempArr.push(Number(i))
-        }
+  computed:{
+    isIos(){
+      let u = navigator.userAgent
+      return !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/)
+    },
+    isAndroid(){
+      let u = navigator.userAgent
+      return u.indexOf('Android') > -1 || u.indexOf('Linux') > -1 //安卓
     }
-    this.$nextTick(()=>{
-        this.$set(this,'currentMonthDays',tempArr)
-    })
-    },
-    prev(){
-    },
-    next(){
-    },
-    filterTime(type){
-        let {monday,sunday,month,nowYear}=getWeek()
-        this.currenDateList=[]
-        if(type==0){//周
-            let timerrang= this.mockData.filter(item=>{
-            return (Date.parse(new Date(monday)) < Date.parse(new Date(item.date)) || Date.parse(new Date(monday))== Date.parse(new Date(item.date)))&&(Date.parse(new Date(sunday)) >  Date.parse(new Date(item.date)) || Date.parse(new Date(sunday))== Date.parse(new Date(item.date)))
-            })
-            this.currenDateList=timerrang.map(e=>{
-                return [getTimeEn(e.date).week,e.value?e.value:undefined]
-            })
-            this.pickerTitle = "Week";
-            this.$set(this.proBarOpt.xAxis,'data',this.WeekEn)//x轴
-            this.currentDateStr=getTimeEn(monday).month+' '+getTimeEn(monday).day+'-'+getTimeEn(sunday).day+','+getTimeEn(monday).year
-        }
-        if(type == 1){//月
-            this.currenDateList=this.mockData.filter(e=>e.month==month).map(e=>{
-                console.log(getTimeEn(e.date).day,'?')
-                return [getTimeEn(e.date).day,e.value?e.value:undefined]
-            })
-            this.pickerTitle = "Month";
-            this.$set(this.proBarOpt.xAxis,'data',this.currenDateList.map(e=>e[0]))//x轴
-            this.currentDateStr=getTimeEn(monday).month+' '+getTimeEn(monday).year
-        }
-        if(type == 2){//季度
-          let temparrQ= this.QuarterEn.filter(e=>e.value.includes(month)).map(i=>i.arr)
-          let temparr=this.QuarterEn.filter(e=>e.value.includes(month)).map(i=>i.value)
-          this.currentDateStr=temparr[0].toString()+' '+getTimeEn(monday).year
-          this.pickerTitle = "Quarter";
-          console.log(temparrQ,'temparrQ')
-          this.$set(this.proBarOpt.xAxis,'data',...temparrQ)//x轴
-          this.currenDateList=this.mockData.filter(e=>{ 
-            return temparr[0].indexOf(e.month)
-            }).map(e=>{
-                return [getTimeEn(e.date).month,e.value?e.value:undefined]
-            })
-          }
-         
-        if(type == 3){//年
-            this.$set(this.proBarOpt.xAxis,'data',[getTimeEn(monday).year])
-            this.currenDateList=this.mockData.filter(e=>e.year==nowYear).map(e=>{
-                return [nowYear,e.value?e.value:undefined]
-            })
-            this.currentDateStr=getTimeEn(monday).year
-        }
-        let ones=this.currenDateList.map(e=>e[1]).map(e=>e?e:0)
-        console.log(this.currenDateList.map(e=>e[1]),'currenDateList')
-        let maxNum=Math.max(...ones)
-        // let minNum=Math.min(...this.currenDateList.map(e=>e[1]))
-        console.log(maxNum,'maxNum')
-        // Math.max(...arr)//动态最大值
-        this.$nextTick(()=>{
-           this.proBarOpt.yAxis[0].max=maxNum
-           this.proBarOpt.yAxis[0].min=0
-            this.$set(this.proBarOpt,'series',{
-            type: "line", //折线图
-            data:this.currenDateList,
-            yAxisIndex: 0,
-            connectNulls: true,
-            smooth: "none", //拐点样式
-            lineStyle: {
-              width: 1,
-              type: "line",
-              smooth: true,
-            },
-          },)
-          this.drawLine()
-        })
-    },
-    fixDate(type) {
-      let yearlist = [...new Set(this.mockData.map((e) => e.year))];
-      let monthList = [...new Set(this.mockData.map((e) => Number(e.month)))];
-      if(type==0){
-       
-       }
-      if (type == 1) {
-        //月份年
-        if (monthList && monthList.length) {
-          this.columns = [];
-          let tempArr = [];
-          this.monthEn.forEach((e, i) => {
-            tempArr.push({
-              text: e,
-              disabled: monthList.includes(Number(i + 1)) ? false : true,
-            });
-          });
-          this.columns = [{ values: tempArr }, { values: yearlist }];
-        }
+  },
+  created() {
+   },
+  methods: {
+    pushDate(){
+      let that = this
+      that.activenav++
+      if(that.isAndroid){//showMobile
+        window.android.showMobile(that.activenav)
       }
-      if (type == 2) {
-        //季节,年
-        this.columns = [];
-        let tempArr = [];
-        this.QuarterEn.forEach((e, i) => {
-          tempArr.push({
-            text: e.text,
-            disabled: monthList.some((r) => e.value.includes(r)) ? false : true,
-          });
-        });
-        this.columns = [{ values: tempArr }, { values: yearlist }];
+      if(that.isIos){//showMobile
+        window.webkit.messageHandlers.showMobile.postMessage(that.activenav)
       }
-      if (type == 3 || type == 4) {
-        this.columns = yearlist;
-      }
+      
     },
-    onCancel() {},
-    onChange() {},
-    showPicker() {
-      let that = this;
-      if (that.activenav == 0) {
-        that.showWeek = true;
-      } else {
-        that.showMonth = true;
-      }
+    pullDate(str) {//从ios拿数据
+      this.pullDateStr=str
     },
-    onConfirm(date) {
-        const [start, end] = date;
-        if(start&&end){
-            this.showWeek=false
-        }
-        console.log(date,start, end)
+    decodeMethod(data){
+        this.pullDateStr=data
     },
-    drawLine() {
-        let that = this
-      // 基于准备好的dom，初始化echarts实例
-      let myChart = echarts.init(document.getElementById("myChart"));
-      // 绘制图表
-      myChart.setOption(this.proBarOpt,true);
-      myChart.on('dataZoom', function (params) {
-        let start = params.batch[0].start
-            let end = params.batch[0].end
-            let diff = end - start
-            that.$nextTick(()=>{
-                that.diff=diff
-            })
-            
-            // diff小于40，算作‘缩放到一定程度’
-            if (diff < 30) {//week
-            //   let option = myChart.getOption()
-            //   option.xAxis[0].data= this.WeekEn
-              this.activenav=0
-            //   myChart.clear()
-            //   myChart.setOption(option, true)
-            }
-            if (diff >= 30) {//month
-                that.$nextTick(()=>{
-                    that.$set(that,'activenav',1)
-                })
-            //   let option = myChart.getOption() 
-            //   myChart.clear()
-            
-            //   myChart.setOption(option, true)
-            }
-            if(31<diff<70){//季节
-                that.$nextTick(()=>{
-                    that.$set(that,'activenav',2)
-                })
-            //   let option = myChart.getOption() 
-            //   myChart.clear()
-            //   myChart.setOption(option, true)
-            }
-            if(80<diff){//年
-                that.$nextTick(()=>{
-                    that.$set(that,'activenav',3)
-                })
-            //   let option = myChart.getOption() 
-            //   myChart.clear()
-            //   myChart.setOption(option, true)
-            }
-    })
+    changebgColor() {
+      this.isChange = !this.isChange;
     },
-    formatter(day) {
-      let isHasData = false;
-      let dayTimestamp = Date.parse(new Date(day.date));
-   
-      this.mockData.forEach((item)=>{
-        if(dayTimestamp==Date.parse(new Date(item.date)) * 1000){
-            day.className = "addDot";
-        }
-     })
-      return day;
-    },
+    callJsFunction(str) {
+        this.msg = "我通过原生方法改变了文字" + str
+        return "js调用成功"
+	},
+    showAndroidToast() {
+        $App.showToast("哈哈，我是js调用的")
+    }
   },
 };
 </script>
@@ -490,7 +249,8 @@ export default {
   background-color: #eff4f8;
 }
 #myChart {
-  width: 100%;
+  width: 200px;
+  margin: 0 auto;
   height: calc(60vh - 140px);
 }
 .tab-tilte {
@@ -535,83 +295,9 @@ export default {
 .box {
   background-color: #fff;
 }
-.boxpanel{
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.boxpanel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-</style>
-<style scoped lang="scss">
-//有数据日期加点
-::v-deep(.addDot) {
-  position: relative;
-}
-::v-deep(.addDot::after) {
-  position: absolute;
-  content: "";
-  width: 12px;
-  height: 12px;
-  top: 26Px;
-  left: 45px;
-  border-radius: 50%;
-  background-color: #0084ff;
-}
-//当天日期
-::v-deep(.calendarToday) {
-  position: relative;
-  color: #fff;
-  // font-size: 0;
-  // z-index: 1;
-}
-::v-deep(.calendarToday::before) {
-  width: 35Px;
-  height: 35Px;
-  line-height: 35Px;
-  position: absolute;
-  top: 0;
-  content: "今";
-  text-align: center;
-  font-size: 30px;
-  border-radius: 50%;
-  background-color: #ffae34;
-  // z-index: -1;
-}
-//当天日期并且有数据
-::v-deep(.addDot_calendarToday::after) {
-  position: absolute;
-  content: "";
-  width: 12px;
-  height: 12px;
-  top: 26Px;
-  left: 45px;
-  border-radius: 50%;
-  background-color: #fff;
-  z-index: 4;
-}
-::v-deep(.addDot_calendarToday::before) {
-  width: 35Px;
-  height: 35Px;
-  line-height: 35Px;
-  position: absolute;
-  top: 0;
-  content: "今";
-  text-align: center;
-  font-size: 30px;
-  border-radius: 50%;
-  color: #fff;
-  background-color: #ffae34;
-}
-//有数据并且被选中
-::v-deep(.addDot_Select::after) {
-  position: absolute;
-  content: "";
-  width: 12px;
-  height: 12px;
-  top: 26Px;
-  left: 45px;
-  border-radius: 50%;
-  background-color: #fff;
-  z-index: 3;
-}
-
 </style>

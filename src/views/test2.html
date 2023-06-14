@@ -1,0 +1,193 @@
+<!doctype html>
+<html>
+ 
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="https://cdn.bootcdn.net/ajax/libs/mui/3.7.1/css/mui.css" rel="stylesheet">
+		<script src="https://cdn.bootcdn.net/ajax/libs/mui/3.7.1/js/mui.js"></script>
+        <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+		<script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+		<style>
+			html,body {
+				width: 100%;
+				height: 100%;
+				background-color: skyblue;
+			}
+			body {
+				font-size: 12px;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+			}
+			#container {
+				width: 80%;
+				height: 50%;
+			}
+		</style>
+	</head>
+ 
+	<body>
+ 
+		<div id="container"></div>
+		<script type="text/javascript">
+			mui.init();
+		</script>
+ 
+		<script type="text/javascript">
+			var dom = document.getElementById("container");
+			console.log(dom.clientWidth);
+			var myChart = echarts.init(dom);
+ 
+			var date = [];
+			var pictorialBar = [];
+			var data = [];
+ 
+			for (var i = 1; i < 240; i++) {
+				date.push(i + ":00");
+				if (i == 21 || i == 19) {
+					data.push("—");
+					pictorialBar.push("—");
+				} else {
+					var number = Math.ceil(Math.random() * 100);
+				
+					pictorialBar.push({
+						value: number
+					})
+					data.push({
+						value: number,
+						itemStyle: {
+							color: "blue"
+						},
+						label: {
+							color: "white"
+						}
+					});
+				}
+ 
+			}
+ 
+			var max = Math.max.apply(Math, data);
+			var min = Math.min.apply(Math, data);
+ 
+			option = {
+				animation: false,
+ 
+				grid: {
+ 
+					left: '0',
+					right: '0',
+					bottom: '30px',
+ 
+				},
+				tooltip: {
+					trigger: 'axis',
+					position: function(pt) {
+						return [pt[0], '10%'];
+					}
+				},
+				title: {
+					left: 'center',
+					text: null,
+				},
+                tooltip: {
+                trigger: 'axis',
+                formatter: function (params) {
+                
+                    let str = params[0].name + '</br>' + 'value:' + params[0].value;
+
+                    return str
+                },
+                },
+				xAxis: {
+					type: 'category',
+					// boundaryGap: false,
+					data: date,
+					axisLabel: {
+						color: "white"
+					},
+					axisLine: {
+						lineStyle: {
+							color: "white"
+						}
+					}
+				},
+				yAxis: {
+					type: 'value',
+					max:max,
+					min: 0,
+					show: true,
+                    axisLine: {
+                        onZero:false,
+						lineStyle: {
+							color: "white"
+						}
+					},
+				},
+				dataZoom: [{
+					type: 'inside',
+					start: 100 - 100 / data.length * (dom.clientWidth / 40),
+					end: 100,
+					zoomOnMouseWheel: false,
+					zoomLock: true,
+				}],
+				series: [{
+					name: '值',
+					type: 'line',
+					// smooth: true,
+					sampling: 'average',
+					symbol: "circle",
+					symbolSize: 12,
+					itemStyle: {
+						color: 'white'
+					},
+					lineStyle: {
+						color: "white",
+						width: 1,
+						opacity: 0.8
+					},
+					label: {
+						show: true,
+						position: "top",
+						// distance:10,
+						formatter: "{c}",
+					},
+					areaStyle: {
+						color: 'rgb(255, 255, 255)',
+						opacity: 0.2
+						// new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+						// 	offset: 0,
+						// 	color: 'rgb(255, 158, 68)'
+						// }, {
+						// 	offset: 1,
+						// 	color: 'rgb(255, 70, 131)'
+						// }])
+					},
+					data: data
+				}, {
+					name: 'dotted',
+					type: 'pictorialBar',
+					symbol: 'rect',
+					itemStyle: {
+						normal: {
+							color: 'rgba(255,255,255,0.5)'
+						}
+					},
+					symbolRepeat: true,
+					symbolSize: [1, 4],
+					symbolMargin: 1,
+					z: -10,
+					data: pictorialBar
+				}]
+			};
+ 
+			myChart.setOption(option, true);
+			myChart.on('click', function(params) {
+				// 控制台打印数据的名称
+				console.log(params.name);
+			});
+		</script>
+	</body>
+ 
+</html>
